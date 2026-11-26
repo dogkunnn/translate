@@ -3,109 +3,299 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0B0F19"
-    android:padding="18dp">
+    android:padding="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Header -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="ICT / SMC Live Dub"
             android:textColor="#60A5FA"
-            android:textSize="22sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="16dp"
-            android:text="ดักฟังเสียง YouTube / Shorts / IG ในมือถือแล้วพากย์ไทยสดๆ (คงศัพท์ ICT/SMC)"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="14dp"
+            android:text="ดักฟังเสียง YouTube / Shorts / IG แล้วพากย์ไทยสด พร้อมปุ่มลอย"
             android:textColor="#94A3B8"
             android:textSize="13sp" />
 
-        <TextView
+        <!-- Status & Main Action Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Gemini API Key"
-            android:textColor="#CBD5E1"
-            android:textSize="13sp" />
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <EditText
-            android:id="@+id/etApiKey"
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_input"
+                android:padding="10dp"
+                android:text="สถานะ: พร้อมใช้งาน"
+                android:textColor="#34D399"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnToggle"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="12dp"
+                android:backgroundTint="#3B82F6"
+                android:text="เริ่มแชร์เสียง &amp; พากย์ไทยสด"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="เมื่อกดเริ่ม ให้เลือก 'ทั้งหน้าจอ (Entire screen)' แล้วสลับไปเปิด YouTube / IG ได้เลย"
+                android:textColor="#94A3B8"
+                android:textSize="11.5sp" />
+        </LinearLayout>
+
+        <!-- Permissions Helper Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="#131A2B"
-            android:hint="AIzaSy..."
-            android:inputType="textPassword"
-            android:padding="12dp"
-            android:textColor="#E2E8F0"
-            android:textColorHint="#64748B" />
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <TextView
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ตั้งค่าสิทธิ์สำหรับมือถือ Samsung"
+                android:textColor="#E2E8F0"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnOverlayPerm"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#1E293B"
+                    android:text="ปุ่มลอยทับแอป"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btnBatteryPerm"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:backgroundTint="#1E293B"
+                    android:text="ไม่จำกัดแบต"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- API Key & Prompt Card (Collapsible) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="System Instructions (คำสั่งล็อกศัพท์เทรด)"
-            android:textColor="#CBD5E1"
-            android:textSize="13sp" />
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <EditText
-            android:id="@+id/etPrompt"
-            android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginTop="6dp"
-            android:background="#131A2B"
-            android:gravity="top|start"
-            android:inputType="textMultiLine"
-            android:padding="12dp"
-            android:textColor="#E2E8F0"
-            android:textSize="12sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/btnToggle"
-            android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="18dp"
-            android:backgroundTint="#3B82F6"
-            android:text="เริ่มแชร์เสียง &amp; พากย์ไทยสด"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="API Key &amp; ศัพท์ ICT/SMC"
+                    android:textColor="#E2E8F0"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvStatus"
+                <Button
+                    android:id="@+id/btnToggleSettings"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:backgroundTint="#1E293B"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="0dp"
+                    android:text="ย่อ/ขยาย"
+                    android:textColor="#93C5FD"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/settingsBody"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Gemini API Key"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/etApiKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_input"
+                    android:hint="AIzaSy..."
+                    android:inputType="textPassword"
+                    android:padding="10dp"
+                    android:textColor="#E2E8F0"
+                    android:textColorHint="#64748B"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="System Instructions (คำสั่งล็อกศัพท์เทรด)"
+                    android:textColor="#94A3B8"
+                    android:textSize="12sp" />
+
+                <EditText
+                    android:id="@+id/etPrompt"
+                    android:layout_width="match_parent"
+                    android:layout_height="100dp"
+                    android:layout_marginTop="4dp"
+                    android:background="@drawable/bg_input"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine"
+                    android:padding="10dp"
+                    android:textColor="#E2E8F0"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Live Transcript Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="#131A2B"
-            android:padding="12dp"
-            android:text="สถานะ: พร้อมใช้งาน (กดปุ่มด้านบน แล้วสลับไปเปิด YouTube / IG ได้เลย)"
-            android:textColor="#34D399"
-            android:textSize="13sp" />
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <TextView
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="คำแปลสด (Live Transcript)"
+                android:textColor="#E2E8F0"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvTranscript"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input"
+                android:minHeight="90dp"
+                android:padding="10dp"
+                android:textColor="#E2E8F0"
+                android:textIsSelectable="true"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Collapsible & Copyable Debug Log Card -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:text="คำแปลสด (Live Transcript)"
-            android:textColor="#CBD5E1"
-            android:textSize="13sp" />
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
 
-        <TextView
-            android:id="@+id/tvTranscript"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:background="#131A2B"
-            android:minHeight="160dp"
-            android:padding="12dp"
-            android:textColor="#E2E8F0"
-            android:textSize="13sp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Debug Log"
+                    android:textColor="#E2E8F0"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnCopyLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginEnd="6dp"
+                    android:backgroundTint="#1E293B"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="0dp"
+                    android:text="คัดลอก Log"
+                    android:textColor="#34D399"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btnToggleLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:backgroundTint="#1E293B"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="0dp"
+                    android:text="ย่อ/ขยาย"
+                    android:textColor="#93C5FD"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/logScroll"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_input"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:text="ยังไม่มี Log..."
+                    android:textColor="#94A3B8"
+                    android:textIsSelectable="true"
+                    android:textSize="11sp" />
+            </ScrollView>
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
