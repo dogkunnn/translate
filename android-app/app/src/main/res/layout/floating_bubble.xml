@@ -4,13 +4,13 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <!-- Messenger-style circular bubble -->
+    <!-- Pastel Purple Messenger-style Bubble -->
     <LinearLayout
         android:id="@+id/bubbleHead"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
         android:background="@drawable/bg_bubble"
-        android:elevation="8dp"
+        android:elevation="10dp"
         android:gravity="center"
         android:orientation="vertical">
 
@@ -18,41 +18,81 @@
             android:id="@+id/tvBubbleIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ICT"
+            android:text="NX"
             android:textColor="#FFFFFF"
-            android:textSize="13sp"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvBubbleLatency"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- ms"
+            android:textColor="#F5D0FE"
+            android:textSize="9sp"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- Expandable floating mini panel -->
+    <!-- Expandable Floating Mini Panel -->
     <LinearLayout
         android:id="@+id/bubblePanel"
-        android:layout_width="260dp"
+        android:layout_width="278dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/bg_card"
-        android:elevation="10dp"
+        android:elevation="12dp"
         android:orientation="vertical"
         android:padding="12dp"
         android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Nexsus Live"
+                android:textColor="#C4B5FD"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvFloatLatency"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="2dp"
+                android:text="Delay: -- ms"
+                android:textColor="#5EEAD4"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvFloatStatus"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
             android:text="กำลังทำงาน..."
-            android:textColor="#34D399"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textColor="#A78BFA"
+            android:textSize="11.5sp" />
 
         <TextView
             android:id="@+id/tvFloatTranscript"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:maxLines="4"
+            android:background="@drawable/bg_input"
+            android:maxLines="5"
+            android:minHeight="48dp"
+            android:padding="8dp"
             android:text="รอเสียงพูด..."
-            android:textColor="#E2E8F0"
+            android:textColor="#F3E8FF"
             android:textSize="12sp" />
 
         <LinearLayout
@@ -62,27 +102,39 @@
             android:orientation="horizontal">
 
             <Button
+                android:id="@+id/btnFloatMute"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:backgroundTint="#2E254D"
+                android:padding="0dp"
+                android:text="ปิดเสียง"
+                android:textColor="#E9D5FF"
+                android:textSize="11sp" />
+
+            <Button
                 android:id="@+id/btnFloatOpen"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:layout_marginEnd="6dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
                 android:layout_weight="1"
-                android:backgroundTint="#1E293B"
+                android:backgroundTint="#7C3AED"
                 android:padding="0dp"
                 android:text="เปิดแอป"
-                android:textColor="#E2E8F0"
-                android:textSize="12sp" />
+                android:textColor="#FFFFFF"
+                android:textSize="11sp" />
 
             <Button
                 android:id="@+id/btnFloatStop"
                 android:layout_width="0dp"
-                android:layout_height="38dp"
+                android:layout_height="36dp"
                 android:layout_weight="1"
-                android:backgroundTint="#EF4444"
+                android:backgroundTint="#EC4899"
                 android:padding="0dp"
-                android:text="หยุดแปล"
+                android:text="หยุด"
                 android:textColor="#FFFFFF"
-                android:textSize="12sp" />
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

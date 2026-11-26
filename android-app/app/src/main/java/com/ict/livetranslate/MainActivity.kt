@@ -14,10 +14,12 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,9 +28,11 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity(), DebugStore.Listener {
 
+    private lateinit var spinnerModel: Spinner
     private lateinit var etApiKey: EditText
     private lateinit var etPrompt: EditText
     private lateinit var btnToggle: Button
+    private lateinit var btnMuteMain: Button
     private lateinit var btnOverlayPerm: Button
     private lateinit var btnBatteryPerm: Button
     private lateinit var btnToggleSettings: Button
@@ -37,16 +41,26 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
     private lateinit var btnToggleLog: Button
     private lateinit var logScroll: ScrollView
     private lateinit var tvStatus: TextView
+    private lateinit var tvLatencyBadge: TextView
     private lateinit var tvTranscript: TextView
     private lateinit var tvLog: TextView
 
-    private val prefs by lazy { getSharedPreferences("ict_live_prefs", Context.MODE_PRIVATE) }
+    private val prefs by lazy { getSharedPreferences("nexsus_prefs", Context.MODE_PRIVATE) }
+
+    private val modelOptions = listOf(
+        "models/gemini-3.5-live-translate-preview",
+        "models/gemini-2.5-flash-native-audio-preview-09-2025",
+        "models/gemini-live-2.5-flash-preview"
+    )
 
     private val defaultPrompt =
         "Translate into natural spoken Thai like a friendly trading mentor explaining to a friend, " +
-            "NOT formal essay Thai. Keep all ICT and SMC trading terms in English without translating them " +
-            "(such as: gap, FVG, Fair Value Gap, Order Block, OB, Breaker, BOS, CHoCH, CISD, Liquidity, " +
-            "Sweep, SMT, Killzone, Silver Bullet, PO3, HTF, LTF, Bias, Draw on Liquidity, Premium, Discount)."
+            "NOT formal essay Thai. Keep all ICT, SMC, TTFM, GXT, and VTrades trading terms in English " +
+            "without translating them (such as: TTFM, GXT, VTrades, VTRADESE, Gap Filter, Relevant Swing, " +
+            "Anomaly, C2, C3, C4, Fractal, Swing High, Swing Low, FVG, IFVG, BPR, Fair Value Gap, " +
+            "Order Block, OB, Breaker, Mitigation, BOS, CHoCH, MSS, CISD, Liquidity, Sweep, Raid, " +
+            "SMT, Killzone, Silver Bullet, PO3, AMD, HTF, LTF, Bias, DOL, Draw on Liquidity, " +
+            "Premium, Discount, OTE, EQH, EQL, NWOG, NDOG, Inducement, Expansion, Retracement)."
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
@@ -58,7 +72,7 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
                 requestScreenCapture()
             } else {
                 DebugStore.log("RECORD_AUDIO permission denied")
-                Toast.makeText(this, "กรุณาอนุญาตสิทธิ์ไมค์/เสียงเพื่อดักฟังเสียงแอปอื่น", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "กรุณาอนุญาตสิทธิ์เสียงเพื่อดักฟังเสียงแอปอื่น", Toast.LENGTH_LONG).show()
             }
         }
 
@@ -66,12 +80,14 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             DebugStore.log("MediaProjection resultCode=${result.resultCode} hasData=${result.data != null}")
             if (result.resultCode == RESULT_OK && result.data != null) {
+                val selectedModel = modelOptions[spinnerModel.selectedItemPosition]
                 val svcIntent = Intent(this, LiveTranslateService::class.java).apply {
                     action = LiveTranslateService.ACTION_START
                     putExtra(LiveTranslateService.EXTRA_RESULT_CODE, result.resultCode)
                     putExtra(LiveTranslateService.EXTRA_RESULT_DATA, result.data)
                     putExtra(LiveTranslateService.EXTRA_API_KEY, etApiKey.text.toString().trim())
                     putExtra(LiveTranslateService.EXTRA_PROMPT, etPrompt.text.toString().trim())
+                    putExtra(LiveTranslateService.EXTRA_MODEL, selectedModel)
                 }
                 ContextCompat.startForegroundService(this, svcIntent)
             } else {
@@ -83,9 +99,11 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        spinnerModel = findViewById(R.id.spinnerModel)
         etApiKey = findViewById(R.id.etApiKey)
         etPrompt = findViewById(R.id.etPrompt)
         btnToggle = findViewById(R.id.btnToggle)
+        btnMuteMain = findViewById(R.id.btnMuteMain)
         btnOverlayPerm = findViewById(R.id.btnOverlayPerm)
         btnBatteryPerm = findViewById(R.id.btnBatteryPerm)
         btnToggleSettings = findViewById(R.id.btnToggleSettings)
@@ -94,8 +112,15 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
         btnToggleLog = findViewById(R.id.btnToggleLog)
         logScroll = findViewById(R.id.logScroll)
         tvStatus = findViewById(R.id.tvStatus)
+        tvLatencyBadge = findViewById(R.id.tvLatencyBadge)
         tvTranscript = findViewById(R.id.tvTranscript)
         tvLog = findViewById(R.id.tvLog)
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, modelOptions).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        spinnerModel.adapter = adapter
+        spinnerModel.setSelection(prefs.getInt("model_idx", 0).coerceIn(0, modelOptions.lastIndex))
 
         etApiKey.setText(prefs.getString("api_key", ""))
         etPrompt.setText(prefs.getString("prompt", defaultPrompt))
@@ -107,6 +132,10 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
             } else {
                 startFlow()
             }
+        }
+
+        btnMuteMain.setOnClickListener {
+            DebugStore.toggleMute()
         }
 
         btnOverlayPerm.setOnClickListener {
@@ -142,7 +171,7 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
                 return@setOnClickListener
             }
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("ICT Live Dub Log", text))
+            cm.setPrimaryClip(ClipData.newPlainText("Nexsus Debug Log", text))
             Toast.makeText(this, "คัดลอก Log แล้ว!", Toast.LENGTH_SHORT).show()
         }
     }
@@ -184,6 +213,7 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
         prefs.edit()
             .putString("api_key", etApiKey.text.toString().trim())
             .putString("prompt", etPrompt.text.toString())
+            .putInt("model_idx", spinnerModel.selectedItemPosition)
             .apply()
     }
 
@@ -222,17 +252,27 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
 
     override fun onStateChanged() {
         tvStatus.text = "สถานะ: ${DebugStore.status}"
-        tvTranscript.text = DebugStore.getTranscript()
+        val ms = DebugStore.latencyMs
+        tvLatencyBadge.text = if (ms >= 0) "Delay: $ms ms" else "Delay: -- ms"
+
+        val t = DebugStore.getTranscript()
+        tvTranscript.text = if (t.isEmpty()) "รอเสียงพูด..." else t
+
         val logs = DebugStore.getLogsText()
         tvLog.text = if (logs.isEmpty()) "ยังไม่มี Log..." else logs
-        logScroll.post { logScroll.fullScroll(View.FOCUS_DOWN) }
+        if (logScroll.visibility == View.VISIBLE) {
+            logScroll.post { logScroll.fullScroll(View.FOCUS_DOWN) }
+        }
 
         if (DebugStore.isRunning) {
             btnToggle.text = "หยุดแปลสด"
-            btnToggle.setBackgroundColor(0xFFEF4444.toInt())
+            btnToggle.setBackgroundColor(0xFFEC4899.toInt())
+            btnMuteMain.visibility = View.VISIBLE
+            btnMuteMain.text = if (DebugStore.isMuted) "เปิดเสียง" else "ปิดเสียง"
         } else {
             btnToggle.text = "เริ่มแชร์เสียง & พากย์ไทยสด"
-            btnToggle.setBackgroundColor(0xFF3B82F6.toInt())
+            btnToggle.setBackgroundColor(0xFF8B5CF6.toInt())
+            btnMuteMain.visibility = View.GONE
         }
     }
 }

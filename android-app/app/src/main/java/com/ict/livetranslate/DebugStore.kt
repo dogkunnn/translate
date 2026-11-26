@@ -18,11 +18,19 @@ object DebugStore {
     private val timeFmt = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
 
     @Volatile
-    var status: String = "พร้อมใช้งาน (กดปุ่มเริ่ม แล้วเลือก 'ทั้งหน้าจอ')"
+    var status: String = "พร้อมใช้งาน • กดเริ่มแล้วเลือก 'ทั้งหน้าจอ'"
         private set
 
     @Volatile
     var isRunning: Boolean = false
+        private set
+
+    @Volatile
+    var isMuted: Boolean = false
+        private set
+
+    @Volatile
+    var latencyMs: Long = -1L
         private set
 
     private val transcriptBuilder = StringBuilder()
@@ -55,10 +63,30 @@ object DebugStore {
         log("STATUS: $newStatus")
     }
 
+    fun setLatency(ms: Long) {
+        latencyMs = ms
+        notifyListeners()
+    }
+
+    fun toggleMute(): Boolean {
+        isMuted = !isMuted
+        log(if (isMuted) "Audio output muted" else "Audio output unmuted")
+        notifyListeners()
+        return isMuted
+    }
+
+    fun setMuted(muted: Boolean) {
+        isMuted = muted
+        notifyListeners()
+    }
+
     fun appendTranscript(chunk: String) {
         if (chunk.isEmpty()) return
         synchronized(transcriptBuilder) {
             transcriptBuilder.append(chunk)
+            if (transcriptBuilder.length > 6000) {
+                transcriptBuilder.delete(0, transcriptBuilder.length - 5000)
+            }
         }
         notifyListeners()
     }
@@ -70,6 +98,7 @@ object DebugStore {
         synchronized(logs) {
             logs.clear()
         }
+        latencyMs = -1L
         notifyListeners()
     }
 
