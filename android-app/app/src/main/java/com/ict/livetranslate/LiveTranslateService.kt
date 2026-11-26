@@ -358,16 +358,15 @@ class LiveTranslateService : Service(), DebugStore.Listener {
 
                 override fun onOpen(ws: WebSocket, response: Response) {
                     DebugStore.log("WebSocket onOpen (HTTP ${response.code}), sending setup...")
-                    val setupObj = JSONObject().apply {
-                        put("model", MODEL)
-                        put(
-                            "generationConfig",
-                            JSONObject().put("responseModalities", JSONArray().put("AUDIO"))
-                        )
-                        put(
+                    val genConfig = JSONObject()
+                        .put("responseModalities", JSONArray().put("AUDIO"))
+                        .put(
                             "translationConfig",
                             JSONObject().put("targetLanguageCode", "th")
                         )
+                    val setupObj = JSONObject().apply {
+                        put("model", MODEL)
+                        put("generationConfig", genConfig)
                         if (tryPrompt && prompt.isNotEmpty()) {
                             put(
                                 "systemInstruction",
