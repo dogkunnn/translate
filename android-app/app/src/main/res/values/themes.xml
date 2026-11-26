@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Nexsus" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#A78BFA</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSurface">#18132B</item>
+        <item name="colorOnSurface">#F3E8FF</item>
+    </style>
+</resources>
