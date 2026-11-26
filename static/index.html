@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0b0f19" />
+  <link rel="manifest" href="/static/manifest.json" />
+  <title>ICT / SMC Video Translator — Gemini Live</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #131a2b;
+      --border: #232f4b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: 1.45rem;
+      margin: 0 0 6px;
+      background: linear-gradient(90deg, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    header p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .lan-pill {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      background: rgba(59, 130, 246, 0.14);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 999px;
+      color: #93c5fd;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tab-btn {
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="url"],
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0d1322;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      font-size: 0.85rem;
+      line-height: 1.45;
+    }
+    .file-drop {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 24px 14px;
+      text-align: center;
+      cursor: pointer;
+      background: #0d1322;
+    }
+    .file-drop input { display: none; }
+    .file-name {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      color: #93c5fd;
+      word-break: break-all;
+    }
+    details {
+      margin-top: 14px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      user-select: none;
+    }
+    .field { margin-top: 12px; }
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] { flex: 1; }
+    .primary-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .primary-btn:hover { background: var(--accent-hover); }
+    .primary-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .progress-wrap {
+      margin-top: 8px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #0d1322;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #10b981);
+      transition: width 0.35s ease;
+    }
+    .status-text {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+    }
+    .error-box {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(239, 68, 68, 0.14);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      font-size: 0.9rem;
+    }
+    video {
+      width: 100%;
+      max-height: 62vh;
+      border-radius: 12px;
+      background: #000;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .sec-btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #1a243b;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .sec-btn.active {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.16);
+      color: #6ee7b7;
+    }
+    .transcript-box {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      background: #0d1322;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ICT / SMC Video Translator</h1>
+      <p>แปลคลิป YouTube / Shorts / IG / MP4 เป็นเสียงพากย์ไทย (คงศัพท์เทรดอังกฤษ)</p>
+      <div class="lan-pill" id="lanBadge">กำลังโหลดลิงก์มือถือ...</div>
+    </header>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" id="tabUrl" type="button">วางลิงก์คลิป</button>
+        <button class="tab-btn" id="tabFile" type="button">เลือกไฟล์ MP4</button>
+      </div>
+
+      <div id="panelUrl">
+        <label for="videoUrl">ลิงก์ YouTube / Shorts / Instagram Reels / TikTok</label>
+        <input id="videoUrl" type="url" placeholder="https://www.youtube.com/watch?v=... หรือ https://www.instagram.com/reel/..." />
+      </div>
+
+      <div id="panelFile" class="hidden">
+        <label>อัปโหลดไฟล์วิดีโอหรือเสียง (.mp4, .mov, .mp3, .m4a)</label>
+        <div class="file-drop" id="fileDrop">
+          <div>แตะเพื่อเลือกไฟล์จากมือถือ / คอม</div>
+          <div class="file-name" id="fileName">ยังไม่ได้เลือกไฟล์</div>
+          <input id="videoFile" type="file" accept="video/*,audio/*" />
+        </div>
+      </div>
+
+      <details>
+        <summary>ตั้งค่า API Key & คำสั่งล็อกศัพท์ ICT / SMC</summary>
+
+        <div class="field">
+          <label for="apiKey">Gemini API Key <span id="envKeyHint" style="color:#34d399;"></span></label>
+          <input id="apiKey" type="password" placeholder="AIzaSy... (บันทึกไว้ในเครื่องนี้ให้อัตโนมัติ)" />
+        </div>
+
+        <div class="field">
+          <label for="origVol">ระดับเสียงต้นฉบับคลอเบาๆ: <span id="origVolLabel">12%</span></label>
+          <div class="range-row">
+            <input id="origVol" type="range" min="0" max="40" value="12" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="sysPrompt">System Instructions (กำหนดโทนเสียงพูดและคำศัพท์ที่ห้ามแปล)</label>
+          <textarea id="sysPrompt"></textarea>
+        </div>
+      </details>
+
+      <button class="primary-btn" id="startBtn" type="button">เริ่มแปลและพากย์ไทย</button>
+    </div>
+
+    <div class="card hidden" id="progressCard">
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="status-text">
+          <span id="statusMsg">กำลังเตรียมข้อมูล...</span>
+          <span id="statusPct">0%</span>
+        </div>
+      </div>
+      <div class="error-box hidden" id="errorBox"></div>
+    </div>
+
+    <div class="card hidden" id="resultCard">
+      <video id="player" controls playsinline></video>
+
+      <div class="btn-row">
+        <button class="sec-btn active" id="btnDubbed" type="button">เสียงพากย์ไทย</button>
+        <button class="sec-btn" id="btnOrig" type="button">เสียงต้นฉบับ</button>
+      </div>
+
+      <div class="btn-row">
+        <a class="sec-btn" id="dlMp4" download="ict_thai_dubbed.mp4">ดาวน์โหลด MP4 พากย์ไทย</a>
+        <a class="sec-btn" id="dlMp3" download="ict_thai_audio.mp3">ดาวน์โหลดเสียง MP3</a>
+      </div>
+
+      <div id="transcriptWrap" class="hidden">
+        <label style="margin-top:14px;">ข้อความที่แปลได้ (Transcript)</label>
+        <div class="transcript-box" id="transcriptBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabUrl = document.getElementById("tabUrl");
+    const tabFile = document.getElementById("tabFile");
+    const panelUrl = document.getElementById("panelUrl");
+    const panelFile = document.getElementById("panelFile");
+    const fileDrop = document.getElementById("fileDrop");
+    const videoFile = document.getElementById("videoFile");
+    const fileName = document.getElementById("fileName");
+    const apiKeyInput = document.getElementById("apiKey");
+    const sysPromptInput = document.getElementById("sysPrompt");
+    const origVolInput = document.getElementById("origVol");
+    const origVolLabel = document.getElementById("origVolLabel");
+    const startBtn = document.getElementById("startBtn");
+    const progressCard = document.getElementById("progressCard");
+    const progressFill = document.getElementById("progressFill");
+    const statusMsg = document.getElementById("statusMsg");
+    const statusPct = document.getElementById("statusPct");
+    const errorBox = document.getElementById("errorBox");
+    const resultCard = document.getElementById("resultCard");
+    const player = document.getElementById("player");
+    const btnDubbed = document.getElementById("btnDubbed");
+    const btnOrig = document.getElementById("btnOrig");
+    const dlMp4 = document.getElementById("dlMp4");
+    const dlMp3 = document.getElementById("dlMp3");
+    const transcriptWrap = document.getElementById("transcriptWrap");
+    const transcriptBox = document.getElementById("transcriptBox");
+
+    let mode = "url";
+    let dubbedUrl = "";
+    let origUrl = "";
+    let pollTimer = null;
+
+    // Load saved settings + server defaults
+    apiKeyInput.value = localStorage.getItem("gemini_api_key") || "";
+    apiKeyInput.addEventListener("input", () => {
+      localStorage.setItem("gemini_api_key", apiKeyInput.value.trim());
+    });
+
+    origVolInput.addEventListener("input", () => {
+      origVolLabel.textContent = origVolInput.value + "%";
+    });
+
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then((cfg) => {
+        document.getElementById("lanBadge").textContent = "เปิดบนมือถือ (Wi-Fi เดียวกัน): " + cfg.lan_url;
+        if (cfg.has_env_key) {
+          document.getElementById("envKeyHint").textContent = "(พบ Key ในเครื่องแล้ว ไม่ต้องกรอกซ้ำก็ได้)";
+        }
+        const savedPrompt = localStorage.getItem("ict_sys_prompt");
+        sysPromptInput.value = savedPrompt || cfg.default_prompt;
+      });
+
+    sysPromptInput.addEventListener("input", () => {
+      localStorage.setItem("ict_sys_prompt", sysPromptInput.value);
+    });
+
+    tabUrl.addEventListener("click", () => {
+      mode = "url";
+      tabUrl.classList.add("active");
+      tabFile.classList.remove("active");
+      panelUrl.classList.remove("hidden");
+      panelFile.classList.add("hidden");
+    });
+
+    tabFile.addEventListener("click", () => {
+      mode = "file";
+      tabFile.classList.add("active");
+      tabUrl.classList.remove("active");
+      panelFile.classList.remove("hidden");
+      panelUrl.classList.add("hidden");
+    });
+
+    fileDrop.addEventListener("click", () => videoFile.click());
+    videoFile.addEventListener("change", () => {
+      fileName.textContent = videoFile.files[0] ? videoFile.files[0].name : "ยังไม่ได้เลือกไฟล์";
+    });
+
+    function switchSource(src, activeBtn, inactiveBtn) {
+      if (!src) return;
+      const t = player.currentTime || 0;
+      const wasPlaying = !player.paused;
+      player.src = src;
+      player.currentTime = t;
+      if (wasPlaying) player.play().catch(() => {});
+      activeBtn.classList.add("active");
+      inactiveBtn.classList.remove("active");
+    }
+
+    btnDubbed.addEventListener("click", () => switchSource(dubbedUrl, btnDubbed, btnOrig));
+    btnOrig.addEventListener("click", () => switchSource(origUrl, btnOrig, btnDubbed));
+
+    startBtn.addEventListener("click", async () => {
+      errorBox.classList.add("hidden");
+      resultCard.classList.add("hidden");
+      progressCard.classList.remove("hidden");
+      progressFill.style.width = "5%";
+      statusPct.textContent = "5%";
+      statusMsg.textContent = "กำลังส่งคำขอ...";
+      startBtn.disabled = true;
+
+      const formData = new FormData();
+      formData.append("api_key", apiKeyInput.value.trim());
+      formData.append("target_lang", "th");
+      formData.append("system_instruction", sysPromptInput.value);
+      formData.append("orig_volume", (Number(origVolInput.value) / 100).toFixed(2));
+
+      if (mode === "url") {
+        formData.append("url", document.getElementById("videoUrl").value.trim());
+      } else if (videoFile.files[0]) {
+        formData.append("file", videoFile.files[0]);
+      }
+
+      try {
+        const res = await fetch("/api/translate", { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "เกิดข้อผิดพลาด");
+
+        pollTimer = setInterval(async () => {
+          try {
+            const jr = await fetch("/api/jobs/" + data.job_id);
+            const job = await jr.json();
+            progressFill.style.width = job.progress + "%";
+            statusPct.textContent = job.progress + "%";
+            statusMsg.textContent = job.message;
+
+            if (job.status === "done") {
+              clearInterval(pollTimer);
+              startBtn.disabled = false;
+              dubbedUrl = job.dubbed_video_url;
+              origUrl = job.orig_video_url;
+              player.src = dubbedUrl;
+              dlMp4.href = dubbedUrl;
+              dlMp3.href = job.audio_url;
+              btnDubbed.classList.add("active");
+              btnOrig.classList.remove("active");
+
+              if (job.transcript) {
+                transcriptBox.textContent = job.transcript;
+                transcriptWrap.classList.remove("hidden");
+              } else {
+                transcriptWrap.classList.add("hidden");
+              }
+              resultCard.classList.remove("hidden");
+            } else if (job.status === "error") {
+              clearInterval(pollTimer);
+              startBtn.disabled = false;
+              errorBox.textContent = job.error || "เกิดข้อผิดพลาดในการแปล";
+              errorBox.classList.remove("hidden");
+            }
+          } catch (e) {
+            clearInterval(pollTimer);
+            startBtn.disabled = false;
+            errorBox.textContent = "ขาดการเชื่อมต่อกับเซิร์ฟเวอร์";
+            errorBox.classList.remove("hidden");
+          }
+        }, 1000);
+      } catch (err) {
+        startBtn.disabled = false;
+        errorBox.textContent = err.message;
+        errorBox.classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+</html>
