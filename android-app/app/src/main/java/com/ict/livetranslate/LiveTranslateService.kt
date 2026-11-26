@@ -17,7 +17,9 @@ import android.media.AudioTrack
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Base64
 import androidx.core.app.NotificationCompat
 import okhttp3.OkHttpClient
@@ -55,6 +57,15 @@ class LiveTranslateService : Service() {
 
     private val running = AtomicBoolean(false)
     private var mediaProjection: MediaProjection? = null
+    private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            if (running.get()) {
+                broadcastState("ระบบหยุดการแชร์เสียงหน้าจอแล้ว", "", false)
+                stopEverything()
+                stopSelf()
+            }
+        }
+    }
     private var audioRecord: AudioRecord? = null
     private var audioTrack: AudioTrack? = null
     private var webSocket: WebSocket? = null
@@ -141,7 +152,10 @@ class LiveTranslateService : Service() {
     ) {
         if (mediaProjection == null) {
             val mpm = getSystemService(MediaProjectionManager::class.java)
-            mediaProjection = mpm.getMediaProjection(resultCode, resultData)
+            mediaProjection = mpm.getMediaProjection(resultCode, resultData)?.also {
+                // Mandatory on Android 14+ (targetSdk 34) before starting capture
+                it.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
+            }
         }
         val projection = mediaProjection ?: run {
             broadcastState("ไม่สามารถเริ่ม MediaProjection ได้", "", false)
@@ -249,6 +263,14 @@ class LiveTranslateService : Service() {
             private fun handleServerJson(raw: String, ws: WebSocket) {
                 try {
                     val json = JSONObject(raw)
+                    if (json.has("error")) {
+                        val errObj = json.optJSONObject("error")
+                        val msg = errObj?.optString("message") ?: json.optString("error")
+                        broadcastState("Gemini Error: $msg", "", false)
+                        stopEverything()
+                        stopSelf()
+                        return
+                    }
                     if (json.has("setupComplete") && !setupDone) {
                         setupDone = true
                         broadcastState("กำลังพากย์ไทยสด! เปิด YouTube / IG ฟังได้เลย", "", true)
@@ -275,15 +297,17 @@ class LiveTranslateService : Service() {
                             broadcastState("กำลังพากย์ไทยสด...", txt, true)
                         }
                     }
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    broadcastState("อ่านข้อมูลจาก Gemini ไม่ได้: ${e.message}", "", true)
                 }
             }
 
             override fun onClosing(ws: WebSocket, code: Int, reason: String) {
                 if (running.get() && tryPrompt && code == 1007) {
-                    // Retry automatically without systemInstruction if model rejects it
                     ws.cancel()
-                    startLiveSession(resultCode, resultData, apiKey, prompt, tryPrompt = false)
+                    Handler(Looper.getMainLooper()).post {
+                        startLiveSession(resultCode, resultData, apiKey, prompt, tryPrompt = false)
+                    }
                 } else if (running.get()) {
                     broadcastState("ตัดการเชื่อมต่อ ($code: $reason)", "", false)
                     stopEverything()
@@ -291,9 +315,18 @@ class LiveTranslateService : Service() {
                 }
             }
 
+            override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+                if (running.get() && !setupDone) {
+                    broadcastState("การเชื่อมต่อถูกปิด ($code: $reason)", "", false)
+                    stopEverything()
+                    stopSelf()
+                }
+            }
+
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 if (running.get()) {
-                    broadcastState("เชื่อมต่อไม่สำเร็จ: ${t.message}", "", false)
+                    val codeInfo = response?.let { " HTTP ${it.code}" } ?: ""
+                    broadcastState("เชื่อมต่อไม่สำเร็จ$codeInfo: ${t.message}", "", false)
                     stopEverything()
                     stopSelf()
                 }
@@ -354,6 +387,7 @@ class LiveTranslateService : Service() {
         audioTrack = null
 
         try {
+            mediaProjection?.unregisterCallback(projectionCallback)
             mediaProjection?.stop()
         } catch (_: Exception) {
         }
