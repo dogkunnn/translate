@@ -43,7 +43,9 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
     private val modelChoices = listOf(
         ModelChoice("Gemini 3.5 Live Translate (แนะนำ • พากย์สด)", "models/gemini-3.5-live-translate-preview"),
         ModelChoice("Gemini 2.5 Flash Native Audio", "models/gemini-2.5-flash-native-audio-preview-09-2025"),
-        ModelChoice("Gemini Live 2.5 Flash", "models/gemini-live-2.5-flash-preview")
+        ModelChoice("Gemini Live 2.5 Flash", "models/gemini-live-2.5-flash-preview"),
+        ModelChoice("OpenAI GPT-4o Realtime (ใช้ OpenAI Key)", "openai:gpt-4o-realtime-preview"),
+        ModelChoice("OpenAI GPT Realtime Mini (ไวกว่า • OpenAI Key)", "openai:gpt-4o-mini-realtime-preview")
     )
 
     private val toneChoices = listOf(
@@ -247,8 +249,11 @@ class MainActivity : AppCompatActivity(), DebugStore.Listener {
             selectedModelIdx = pos
             savePrefs()
             tvActiveModelPill.text = "Model: ${modelChoices[pos].title}"
+            val isOpenAi = modelChoices[pos].id.startsWith("openai:")
+            tilApiKey.hint = if (isOpenAi) "OpenAI API Key (sk-...)" else "Gemini API Key (AIza...)"
         }
         tvActiveModelPill.text = "Model: ${modelChoices[selectedModelIdx].title}"
+        tilApiKey.hint = if (modelChoices[selectedModelIdx].id.startsWith("openai:")) "OpenAI API Key (sk-...)" else "Gemini API Key (AIza...)"
 
         selectedToneIdx = prefs.getInt("tone_idx", 0).coerceIn(0, toneChoices.lastIndex)
         val toneTitles = toneChoices.map { it.title }

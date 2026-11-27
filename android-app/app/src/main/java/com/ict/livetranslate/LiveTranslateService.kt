@@ -57,10 +57,12 @@ class LiveTranslateService : Service(), DebugStore.Listener {
 
         private const val CHANNEL_ID = "nexsus_live_dub_channel"
         private const val NOTIF_ID = 1001
-        private const val INPUT_RATE = 16000
         private const val OUTPUT_RATE = 24000
         private const val DEFAULT_MODEL = "models/gemini-3.5-live-translate-preview"
     }
+
+    private fun isOpenAiModel(model: String): Boolean = model.startsWith("openai:")
+    private fun inputSampleRateFor(model: String): Int = if (isOpenAiModel(model)) 24000 else 16000
 
     private val running = AtomicBoolean(false)
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -345,6 +347,7 @@ class LiveTranslateService : Service(), DebugStore.Listener {
             }
 
             if (audioRecord == null) {
+                val inputRate = inputSampleRateFor(model)
                 val captureConfig = AudioPlaybackCaptureConfiguration.Builder(projection)
                     .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
                     .addMatchingUsage(AudioAttributes.USAGE_GAME)
@@ -352,29 +355,40 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                     .build()
 
                 val inBufSize = AudioRecord.getMinBufferSize(
-                    INPUT_RATE,
+                    inputRate,
                     AudioFormat.CHANNEL_IN_MONO,
                     AudioFormat.ENCODING_PCM_16BIT
-                ).coerceAtLeast(4096)
+                ).coerceAtLeast(2048)
 
                 audioRecord = AudioRecord.Builder()
                     .setAudioPlaybackCaptureConfig(captureConfig)
                     .setAudioFormat(
                         AudioFormat.Builder()
                             .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(INPUT_RATE)
+                            .setSampleRate(inputRate)
                             .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
                             .build()
                     )
                     .setBufferSizeInBytes(inBufSize)
                     .build()
-                DebugStore.log("AudioRecord ready (state=${audioRecord?.state}, buf=$inBufSize)")
+                DebugStore.log("AudioRecord ready (rate=$inputRate, state=${audioRecord?.state}, buf=$inBufSize)")
             }
 
-            val wsUrl =
+            val useOpenAi = isOpenAiModel(model)
+            val actualModel = model.removePrefix("openai:")
+            val wsUrl = if (useOpenAi) {
+                "wss://api.openai.com/v1/realtime?model=$actualModel"
+            } else {
                 "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=$apiKey"
+            }
             val connectStartMs = System.currentTimeMillis()
-            val request = Request.Builder().url(wsUrl).build()
+            val reqBuilder = Request.Builder().url(wsUrl)
+            if (useOpenAi) {
+                reqBuilder
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .addHeader("OpenAI-Beta", "realtime=v1")
+            }
+            val request = reqBuilder.build()
 
             webSocket = httpClient.newWebSocket(request, object : WebSocketListener() {
                 private var setupDone = false
@@ -383,7 +397,39 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                 override fun onOpen(ws: WebSocket, response: Response) {
                     val handshakeMs = System.currentTimeMillis() - connectStartMs
                     DebugStore.setLatency(handshakeMs)
-                    DebugStore.log("WS connected (${handshakeMs}ms), sending setup (prompt=$tryPrompt, tx=$tryTranscription)")
+                    DebugStore.log("WS connected (${handshakeMs}ms), sending setup (openAi=$useOpenAi, prompt=$tryPrompt)")
+
+                    lastTxMillis.set(System.currentTimeMillis())
+                    if (useOpenAi) {
+                        val instructions = if (prompt.isNotEmpty()) {
+                            prompt
+                        } else {
+                            "Translate all spoken English into natural spoken Thai in real-time."
+                        }
+                        val sessionObj = JSONObject()
+                            .put("modalities", JSONArray().put("audio").put("text"))
+                            .put("instructions", instructions)
+                            .put("input_audio_format", "pcm16")
+                            .put("output_audio_format", "pcm16")
+                            .put(
+                                "turn_detection",
+                                JSONObject()
+                                    .put("type", "server_vad")
+                                    .put("threshold", 0.45)
+                                    .put("prefix_padding_ms", 200)
+                                    .put("silence_duration_ms", 350)
+                            )
+                        ws.send(
+                            JSONObject()
+                                .put("type", "session.update")
+                                .put("session", sessionObj)
+                                .toString()
+                        )
+                        setupDone = true
+                        DebugStore.setStatus("กำลังพากย์ไทยสด (OpenAI Realtime)!", true)
+                        startAudioCaptureLoop(ws, isOpenAi = true)
+                        return
+                    }
 
                     val genConfig = JSONObject()
                         .put("responseModalities", JSONArray().put("AUDIO"))
@@ -393,7 +439,7 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                         )
 
                     val setupObj = JSONObject().apply {
-                        put("model", model)
+                        put("model", actualModel)
                         put("generationConfig", genConfig)
                         if (tryTranscription) {
                             put("outputAudioTranscription", JSONObject())
@@ -409,7 +455,6 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                             )
                         }
                     }
-                    lastTxMillis.set(System.currentTimeMillis())
                     ws.send(JSONObject().put("setup", setupObj).toString())
                 }
 
@@ -424,6 +469,32 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                 private fun handleServerJson(raw: String, ws: WebSocket) {
                     try {
                         val json = JSONObject(raw)
+                        if (useOpenAi) {
+                            when (json.optString("type")) {
+                                "error" -> {
+                                    val msg = json.optJSONObject("error")?.optString("message") ?: raw.take(200)
+                                    DebugStore.log("OpenAI error: $msg")
+                                    DebugStore.setStatus("OpenAI Error: $msg", false)
+                                    stopEverything()
+                                    stopSelf()
+                                }
+                                "response.audio.delta" -> {
+                                    val b64 = json.optString("delta")
+                                    if (b64.isNotEmpty()) {
+                                        val txTs = lastTxMillis.get()
+                                        if (txTs > 0) DebugStore.setLatency((System.currentTimeMillis() - txTs).coerceIn(1L, 9999L))
+                                        val pcm = Base64.decode(b64, Base64.DEFAULT)
+                                        if (!DebugStore.isMuted) audioTrack?.write(pcm, 0, pcm.size)
+                                    }
+                                }
+                                "response.audio_transcript.delta" -> {
+                                    val txt = json.optString("delta")
+                                    if (txt.isNotEmpty()) DebugStore.appendTranscript(txt)
+                                }
+                            }
+                            return
+                        }
+
                         if (json.has("error")) {
                             val errObj = json.optJSONObject("error")
                             val msg = errObj?.optString("message") ?: raw.take(200)
@@ -439,7 +510,7 @@ class LiveTranslateService : Service(), DebugStore.Listener {
                             DebugStore.setLatency(rtt)
                             DebugStore.log("setupComplete (${rtt}ms)! Capturing audio...")
                             DebugStore.setStatus("กำลังพากย์ไทยสด! เปิด YouTube / IG ฟังได้เลย", true)
-                            startAudioCaptureLoop(ws)
+                            startAudioCaptureLoop(ws, isOpenAi = false)
                             return
                         }
 
@@ -552,26 +623,33 @@ class LiveTranslateService : Service(), DebugStore.Listener {
         }
     }
 
-    private fun startAudioCaptureLoop(ws: WebSocket) {
+    private fun startAudioCaptureLoop(ws: WebSocket, isOpenAi: Boolean = false) {
         if (captureThread != null) return
         val rec = audioRecord ?: return
         rec.startRecording()
 
         captureThread = Thread {
-            val buffer = ByteArray(2048) // 64ms at 16kHz mono 16-bit
+            val buffer = ByteArray(1024) // 32ms at 16kHz (or ~21ms at 24kHz) for lower latency
             while (running.get()) {
                 val read = rec.read(buffer, 0, buffer.size)
                 if (read > 0) {
                     val b64 = Base64.encodeToString(buffer, 0, read, Base64.NO_WRAP)
-                    val chunk = JSONObject()
-                        .put("mimeType", "audio/pcm;rate=16000")
-                        .put("data", b64)
-                    val payload = JSONObject().put(
-                        "realtimeInput",
-                        JSONObject().put("mediaChunks", JSONArray().put(chunk))
-                    )
                     lastTxMillis.set(System.currentTimeMillis())
-                    ws.send(payload.toString())
+                    if (isOpenAi) {
+                        val payload = JSONObject()
+                            .put("type", "input_audio_buffer.append")
+                            .put("audio", b64)
+                        ws.send(payload.toString())
+                    } else {
+                        val chunk = JSONObject()
+                            .put("mimeType", "audio/pcm;rate=16000")
+                            .put("data", b64)
+                        val payload = JSONObject().put(
+                            "realtimeInput",
+                            JSONObject().put("mediaChunks", JSONArray().put(chunk))
+                        )
+                        ws.send(payload.toString())
+                    }
                 } else if (read < 0) {
                     DebugStore.log("AudioRecord.read error: $read")
                     break
